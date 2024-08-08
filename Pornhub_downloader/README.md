@@ -10,5 +10,9 @@
 
 ### Download speed
 
-- Single thread in this version, but i will develop multithreading in next version!
+- ~~Single thread in this version, but i will develop multithreading in next version!~~
+- v2.0 can start in multithreading! Enjoy it!
 
+### Cooperation
+
+- Welcome your PR~

@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using System;
 using Newtonsoft.Json.Linq;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 
 namespace Pornhub_downloader
 {
@@ -12,7 +13,7 @@ namespace Pornhub_downloader
         static async Task Main(string[] args)
         {
 #if DEBUG
-            var baselink = @"https://cn.pornhub.com/view_video.php?viewkey=66896cd02874b";
+            var baselink = @"https://cn.pornhub.com/view_video.php?viewkey=66855d107f8e3";
             Console.WriteLine($"please enter Pornhub link: {baselink}");
             
 #else
@@ -119,10 +120,20 @@ namespace Pornhub_downloader
 
                 if (links == null ||  links.Count == 0) throw new ApplicationException();
 
-                await downloadTs(links, m3u8Url);
+                Stopwatch sw = Stopwatch.StartNew();
 
+                // single thread
+                // await DownloadModel.downloadTs(client, links, m3u8Url);
+
+                // multithreading
+                DownloadModel downloadModel = new DownloadModel();
+                await downloadModel.downloadTsAsync(client, links, m3u8Url, thread_count: 8);
+
+                sw.Stop();
                 Console.WriteLine();
-                Console.Write($"Done! Pls check [{guid}.mp4] and Press to quit..");
+                Console.WriteLine($"Duration: {(double)(sw.ElapsedMilliseconds) / 1000}s");
+                Console.WriteLine(@"Pls star repo https://github.com/jeremyzhong7/Pornhub_downloader");
+                Console.WriteLine($"Done! Pls check [{DownloadModel.guid}.mp4] and Press to quit..");
                 Console.ReadKey();
             }
             catch (ApplicationException ex)
@@ -154,32 +165,6 @@ namespace Pornhub_downloader
                 if (!string.IsNullOrEmpty(match.Value)) ts.Add(match.Value);
 
             return ts;
-        }
-
-        static string guid = Guid.NewGuid().ToString();
-        //下载所有ts片段
-        private static async Task downloadTs(List<string> ts, string baseUrl)
-        {
-            using(FileStream fs = new FileStream($"{guid}.mp4", FileMode.OpenOrCreate, FileAccess.Write))
-            {
-                var index = 0;
-                var len = ts.Count;
-                foreach (string s in ts)
-                {
-                    byte[] tmp = await client.GetByteArrayAsync(baseUrl + s);
-
-                    fs.Write(tmp, 0, tmp.Length);
-
-                    process_show(++index, len);
-                }
-            }
-        }
-
-        private static void process_show(int index, int cnt)
-        {
-            Console.CursorLeft = 0;
-            double percentage = (double)index / cnt * 100;
-            Console.Write($"Downloading ... [{Math.Round(percentage, 2)}%]");
         }
     }
 }
